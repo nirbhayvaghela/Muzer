@@ -33,5 +33,3 @@ export default AuthButton;
 
 
 
-
-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
