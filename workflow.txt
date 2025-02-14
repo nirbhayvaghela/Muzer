@@ -1,0 +1,31 @@
+Muzi
+
+1. Initialize a NextJS Project
+  
+2. Add NextAuth for authentication (Google)
+
+3. Create the schema for User, Space, ActiveStream, StreamHistory
+
+4. Create endpoints that lets
+
+a. a user create a space
+
+b. end users add streams
+
+c. end users upvote/cancel upvote on streams
+
+d. Lets everyone fetch the current streams (with their upvotes)
+
+5. Create a websocket server where
+
+a. Users can subscribe to streams (updates on a certain room)
+
+b. Users get back an update whenever upvotes change
+
+6. Create the frontend
+
+a. Landing page
+
+b. Spaces page
+
+c. Individual space page
