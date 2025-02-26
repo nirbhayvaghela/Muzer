@@ -18,32 +18,36 @@ model User {
   email    String    @unique
   password String?
   provider Providers
-  upvotes  Upvote[]
-  streams  Stream[]
+  Queue    Queue? 
 }
 
 model Stream {
-  id          String     @id @default(uuid())
-  url         String
-  extractedId String
-  title       String     @default("")
-  smallImage  String     @default("")
-  bigImage    String     @default("")
-  type        StreamType
-  active      Boolean    @default(true)
-  upvotes     Upvote[]
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
+  id            String     @id @default(uuid())
+  url           String
+  extractedId   String     @unique
+  title         String     @default("")
+  smallImage    String     @default("")
+  bigImage      String     @default("")
+  played        Boolean    @default(false)
+  type          StreamType
+  upvotes       Upvote[]
+  queueID       String
+  queue         Queue      @relation(fields: [queueID], references: [id], onDelete: Cascade)
+}
+
+model Queue {
+  id      String   @id @default(uuid())
+  streams Stream[]
+  userId  String   @unique
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Upvote {
   id       String @id @default(uuid())
-  userId   String
   streamId String
-  user     User   @relation(fields: [userId], references: [id])
   stream   Stream @relation(fields: [streamId], references: [id])
 
-  @@unique([streamId, userId])
+  @@unique([streamId])
 }
 
 enum StreamType {

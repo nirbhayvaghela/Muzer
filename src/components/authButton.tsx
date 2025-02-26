@@ -20,12 +20,12 @@ function AuthButton() {
   }
 
   return (
-    <button 
-      onClick={handleAuth}
-      className="px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-    >
-      {session ? "Sign Out" : "Sign In"}
-    </button>
+    <button
+    className="px-4 py-2 rounded-md bg-[#7D26CD] text-white hover:bg-[#9D4DFF] transition-colors"
+    onClick={handleAuth}
+  >
+    {session ? "Sign Out" : "Sign In"}
+  </button>
   );
 }
 
