@@ -7,6 +7,7 @@ interface Song {
   id: string;
   title: string;
   thumbnail: string;
+  votes: number;
 }
 
 export default function Dashboard() {
@@ -30,7 +31,7 @@ export default function Dashboard() {
       const title = `YouTube Video ${videoId}`;
       const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
       
-      return { id: videoId, title, thumbnail };
+      return { id: videoId, title, thumbnail, votes: 0 };
     } catch (error) {
       console.error('Error fetching video details:', error);
       setError('Failed to fetch video details');
@@ -49,12 +50,17 @@ export default function Dashboard() {
 
     const songDetails = await fetchVideoDetails(videoId);
     if (songDetails) {
-      setQueue(prev => [...prev, songDetails]);
+      const newQueue = [...queue, {...songDetails, votes: 0}];
+    
+      // Sort by votes (highest first)
+      newQueue.sort((a, b) => b.votes - a.votes);
+    
+      setQueue(newQueue);
       setUrl('');
       
       // If no song is currently playing, set this as current
       if (!currentSong) {
-        setCurrentSong(songDetails);
+        setCurrentSong({...songDetails, votes: 0});
       }
     }
   };
@@ -83,6 +89,31 @@ export default function Dashboard() {
     if (e.key === 'Enter') {
       addToQueue();
     }
+  };
+
+  const upvoteSong = (index: number) => {
+    const newQueue = [...queue];
+    newQueue[index] = {...newQueue[index], votes: newQueue[index].votes + 1};
+    
+    // Sort queue by votes (highest first)
+    newQueue.sort((a, b) => b.votes - a.votes);
+    
+    setQueue(newQueue);
+    
+    // If no song is playing, play the highest voted song
+    if (!currentSong && newQueue.length > 0) {
+      setCurrentSong(newQueue[0]);
+    }
+  };
+
+  const downvoteSong = (index: number) => {
+    const newQueue = [...queue];
+    newQueue[index] = {...newQueue[index], votes: newQueue[index].votes - 1};
+    
+    // Sort queue by votes (highest first)
+    newQueue.sort((a, b) => b.votes - a.votes);
+    
+    setQueue(newQueue);
   };
 
   return (
@@ -137,34 +168,70 @@ export default function Dashboard() {
                 {queue.map((song, index) => (
                   <li 
                     key={`${song.id}-${index}`}
-                    className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all hover:bg-[#2A2A2A] ${currentSong?.id === song.id ? 'bg-[#2A2A2A] border-l-4 border-[#8A2BE2]' : ''}`}
+                    className={`flex flex-col gap-1 p-2 rounded-md cursor-pointer transition-all hover:bg-[#2A2A2A] ${currentSong?.id === song.id ? 'bg-[#2A2A2A] border-l-4 border-[#8A2BE2]' : ''}`}
                   >
-                    <div className="relative flex-shrink-0" onClick={() => playSong(song)}>
-                      <Image
-                        width="100"
-                        height="100"
-                        src={song.thumbnail} 
-                        alt={song.title} 
-                        className="w-20 h-14 object-cover rounded"
-                      />
-                      {currentSong?.id === song.id && (
-                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                          <div className="w-3 h-3 bg-[#8A2BE2] rounded-full animate-pulse"></div>
-                        </div>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-shrink-0" onClick={() => playSong(song)}>
+                        <Image
+                          width="100"
+                          height="100"
+                          src={song.thumbnail || "/placeholder.svg"} 
+                          alt={song.title} 
+                          className="w-20 h-14 object-cover rounded"
+                        />
+                        {currentSong?.id === song.id && (
+                          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                            <div className="w-3 h-3 bg-[#8A2BE2] rounded-full animate-pulse"></div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0" onClick={() => playSong(song)}>
+                        <p className="truncate text-sm">{song.title}</p>
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSong(index);
+                        }}
+                        className="p-1 rounded-full hover:bg-[#333] text-gray-400 hover:text-white transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0" onClick={() => playSong(song)}>
-                      <p className="truncate text-sm">{song.title}</p>
+                    <div className="flex items-center gap-2 ml-20">
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            upvoteSong(index);
+                          }}
+                          className="p-1 rounded-full hover:bg-[#333] text-gray-400 hover:text-green-400 transition-colors"
+                          aria-label="Upvote"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-up">
+                            <path d="m18 15-6-6-6 6"/>
+                          </svg>
+                        </button>
+                        <span className={`text-xs font-medium ${song.votes > 0 ? 'text-green-400' : song.votes < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                          {song.votes}
+                        </span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downvoteSong(index);
+                          }}
+                          className="p-1 rounded-full hover:bg-[#333] text-gray-400 hover:text-red-400 transition-colors"
+                          aria-label="Downvote"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down">
+                            <path d="m6 9 6 6 6-6"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {index === 0 && queue.length > 1 ? 'Playing next' : ''}
+                      </span>
                     </div>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeSong(index);
-                      }}
-                      className="p-1 rounded-full hover:bg-[#333] text-gray-400 hover:text-white transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
                   </li>
                 ))}
               </ul>

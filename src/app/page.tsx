@@ -12,11 +12,14 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import AuthButton from "@/components/authButton";
+import { useSession } from "next-auth/react";
 
 function App() {
+  const { data: session } = useSession();
   const [url, setUrl] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const router = useRouter();
+  
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -95,7 +98,7 @@ function App() {
             </div>
             <div className="hidden md:block">
               <div className="flex items-center space-x-4">
-              <AuthButton />
+                <AuthButton />
               </div>
             </div>
           </div>
@@ -131,13 +134,15 @@ function App() {
               </div>
             </div>
 
-            <Button
-              onClick={() => router.push("/dashboard")}
-              size="lg"
-              className="bg-[#8A2BE2] hover:bg-[#7B27CC] text-white px-8 py-6 text-lg rounded-full shadow-[0_0_15px_rgba(138,43,226,0.5)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(138,43,226,0.8)]"
-            >
-              Get Started <ChevronRight className="ml-2" />
-            </Button>
+            {session && (
+              <Button
+                onClick={() => router.push("/dashboard")}
+                size="lg"
+                className="bg-[#8A2BE2] hover:bg-[#7B27CC] text-white px-8 py-6 text-lg rounded-full shadow-[0_0_15px_rgba(138,43,226,0.5)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(138,43,226,0.8)]"
+              >
+                Get Started <ChevronRight className="ml-2" />
+              </Button>
+            )}
           </div>
 
           <div className="mt-28">

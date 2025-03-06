@@ -14,11 +14,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!signInUser) {
-          await db.user.create({
+         const dbUser =  await db.user.create({
             data: {
               email: user.email ?? "",
               provider: "Google",
             },
+          });
+          await db.queue.create({
+            data: {
+              userId: dbUser.id
+            }
           });
         }
       }

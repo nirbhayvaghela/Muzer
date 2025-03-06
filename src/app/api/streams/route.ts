@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -11,7 +12,7 @@ export const YT_REGEX =
 // Define validation schema
 const CreateStreamSchema = z.object({
   url: z.string().url(),
-  creatorId: z.string()
+  creatorId: z.string(),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,31 +20,25 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = CreateStreamSchema.parse(body);
 
-    //TODO: remoe this  validation for creatorID
-    const iscreatorExist = await db.user.findFirst({
-      where:{
-        id: data?.creatorId
-      }
+    // Ensure Queue Exists for User
+    const userExists = await db.user.findUnique({
+      where: { id: data.creatorId },
     });
-
-    if(!iscreatorExist) {
-      return NextResponse.json({
-        message:"creator doesn't exist"
-      });
-    }
-
-    if (!data.url.trim()) {
+    
+    if (!userExists) {
       return NextResponse.json(
-        {
-          message: "YouTube link cannot be empty",
-        },
-        {
-          status: 400,
-        },
+        { message: "Creator does not exist", status: false },
+        { status: 400 }
       );
     }
 
-    // YouTube URL validationa
+    const queue = await db.queue.upsert({
+      where: { userId: data.creatorId },
+      update: {},
+      create: { userId: data.creatorId },
+    });
+
+    // Validate YouTube URL
     const videoId = data.url.match(YT_REGEX)?.[1];
     if (!videoId) {
       return NextResponse.json(
@@ -52,95 +47,137 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch video details with error handling
+    // Fetch YouTube Video Details
     let videoDetails;
     try {
       videoDetails = await youtubesearchapi.GetVideoDetails(videoId);
-      if (!videoDetails?.thumbnail?.thumbnails?.length) {
-        throw new Error('Invalid video details response');
+
+      if (!videoDetails || !videoDetails.thumbnail?.thumbnails?.length) {
+        return NextResponse.json(
+          { message: "Invalid video details response" },
+          { status: 400 }
+        );
       }
     } catch (error) {
-      console.error('Error fetching video details:', error);
+      console.error("Error fetching video details:", error);
       return NextResponse.json(
         { message: "Failed to fetch video details" },
         { status: 500 }
       );
     }
 
-    // Process thumbnails
+    // Process Thumbnails
     const thumbnails = [...videoDetails.thumbnail.thumbnails].sort(
       (a, b) => a.width - b.width
     );
 
-    const fallbackImage = "https://cdn.pixabay.com/photo/2024/02/28/07/42/european-shorthair-8601492_640.jpg";
+    const fallbackImage =
+      "https://cdn.pixabay.com/photo/2024/02/28/07/42/european-shorthair-8601492_640.jpg";
 
-    // Create stream with proper error handling
+    // Create Stream
     const stream = await db.stream.create({
       data: {
-        userId: data.creatorId,
+        creatorId: data?.creatorId,
         url: data.url,
         extractedId: videoId,
         title: videoDetails.title || "Can't find video",
-        smallImage: thumbnails.length > 1 
-          ? thumbnails[thumbnails.length - 2].url 
-          : thumbnails[0]?.url ?? fallbackImage,
+        smallImage:
+          thumbnails.length > 1
+            ? thumbnails[thumbnails.length - 2].url
+            : thumbnails[0]?.url ?? fallbackImage,
         bigImage: thumbnails[thumbnails.length - 1]?.url ?? fallbackImage,
-        type: "Youtube"
-      }
+        queueId: queue.id,
+        type: "Youtube",
+      },
     });
 
     return NextResponse.json({
-      message: "Stream added Successfully.",
+      message: "Stream added successfully.",
       id: stream.id,
-      status: true
+      status: true,
     });
+  } catch (error: any) {
+    // console.error("Error in POST handler:", error);
 
-  } catch (error) {
-    console.error('Error in POST handler:', error);
-    
-    // Provide more specific error messages based on error type
     if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        message: "Invalid input data",
-        errors: error.errors,
-        status: false
-      }, { status: 400 });
+      return NextResponse.json(
+        { message: "Invalid input data", errors: error.errors, status: false },
+        { status: 400 }
+      );
     }
 
-    if (error instanceof Error) {
-      return NextResponse.json({
-        message: error.message || "Error while adding stream",
-        status: false
-      }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      message: "An unexpected error occurred",
-      status: false
-    }, { status: 500 });
+    return NextResponse.json(
+      { message: error.message || "Error while adding stream", status: false },
+      { status: 500 }
+    );
   }
 }
 
-export async function GET(req: NextRequest) {
-  const searchParams = req.nextUrl.searchParams;
-  const creatorId = searchParams.get("creatorId");
+const DeleteStreamSchema = z.object({
+  streamId: z.string().uuid(),
+});
 
+export async function DELETE(req: NextRequest) {
   try {
-    const streams = await db.stream.findMany({
-      where: {
-        userId: (creatorId as string) ?? "",
-      },
+    const body = await req.json();
+    const { streamId } = DeleteStreamSchema.parse(body);
+    
+    // Check if the stream exists
+    const stream = await db.stream.findUnique({
+      where: { id: streamId },
     });
+
+    if (!stream) {
+      return NextResponse.json(
+        { message: "Stream not found", status: false },
+        { status: 404 }
+      );
+    }
+
+    // Delete the stream
+    await db.stream.delete({
+      where: { id: streamId },
+    });
+
     return NextResponse.json({
-      message: "strems fetched Successfully.",
-      streams: streams,
+      message: "Stream deleted successfully",
       status: true,
     });
   } catch (error) {
-    console.log(error);
-    return NextResponse.json({
-      message: "Error while fetching a stream",
-      status: false,
-    });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { message: "Invalid input data", errors: error.errors, status: false },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Error deleting stream", status: false },
+      { status: 500 }
+    );
   }
 }
+
+// export async function GET(req: NextRequest) {
+//   const searchParams = req.nextUrl.searchParams;
+//   const creatorId = searchParams.get("creatorId");
+
+//   try {
+//     const streams = await db.stream.findMany({
+//       where: {
+//         userId: (creatorId as string) ?? "",
+//       },
+//     });
+//     return NextResponse.json({
+//       message: "strems fetched Successfully.",
+//       streams: streams,
+//       status: true,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return NextResponse.json({
+//       message: "Error while fetching a stream",
+//       status: false,
+//     });
+//   }
+// }
