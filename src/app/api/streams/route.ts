@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
     try {
       videoDetails = await youtubesearchapi.GetVideoDetails(videoId);
       console.log(videoDetails,"videoDetails")
+      
       if (!videoDetails || !videoDetails.thumbnail?.thumbnails?.length) {
         return NextResponse.json(
           { message: "Invalid video details response" },
