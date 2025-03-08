@@ -6,8 +6,8 @@ import db from "@/lib/db";
 //@ts-ignore
 import youtubesearchapi from "youtube-search-api";
 
-export const YT_REGEX =
-  /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:watch\?(?!.*\blist=)(?:.*&)?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&]\S+)?$/;
+const YT_REGEX =
+  /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 
 // Define validation schema
 const CreateStreamSchema = z.object({
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const userExists = await db.user.findUnique({
       where: { id: data.creatorId },
     });
-    
+
     if (!userExists) {
       return NextResponse.json(
         { message: "Creator does not exist", status: false },
@@ -32,12 +32,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const queue = await db.queue.upsert({
-      where: { userId: data.creatorId },
-      update: {},
-      create: { userId: data.creatorId },
+    const queue = await db.queue.findFirst({
+      where: { userId: data?.creatorId },
     });
-
+    if(!queue) {
+      return NextResponse.json(
+        { message: "QueueId is required" },
+        { status: 400 }
+      );
+    }
     // Validate YouTube URL
     const videoId = data.url.match(YT_REGEX)?.[1];
     if (!videoId) {
@@ -46,6 +49,22 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const isStreamExits = await db.stream.findFirst({
+      where: {
+        queueId: queue?.id,
+        extractedId: videoId,
+      },
+    });
+
+    if (isStreamExits) {
+      return NextResponse.json(
+        { message: "This video is alredy exits." },
+        { status: 409 }
+      );
+    }
+
+    
 
     // Fetch YouTube Video Details
     let videoDetails;
@@ -86,7 +105,7 @@ export async function POST(req: NextRequest) {
             ? thumbnails[thumbnails.length - 2].url
             : thumbnails[0]?.url ?? fallbackImage,
         bigImage: thumbnails[thumbnails.length - 1]?.url ?? fallbackImage,
-        queueId: queue.id,
+        queueId: queue?.id,
         type: "Youtube",
       },
     });
@@ -113,15 +132,17 @@ export async function POST(req: NextRequest) {
   }
 }
 
-const DeleteStreamSchema = z.object({
-  streamId: z.string().uuid(),
-});
-
 export async function DELETE(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { streamId } = DeleteStreamSchema.parse(body);
-    
+    const searchParams = req.nextUrl.searchParams;
+    const streamId = searchParams.get("streamId");
+
+    if(!streamId) {
+      return NextResponse.json({
+        message: "streamId required.",
+        status: 404,
+      })
+    }
     // Check if the stream exists
     const stream = await db.stream.findUnique({
       where: { id: streamId },

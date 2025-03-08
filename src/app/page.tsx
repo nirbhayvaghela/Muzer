@@ -136,7 +136,7 @@ function App() {
 
             {session && (
               <Button
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push(`/dashboard/${session?.user?.id}`)}
                 size="lg"
                 className="bg-[#8A2BE2] hover:bg-[#7B27CC] text-white px-8 py-6 text-lg rounded-full shadow-[0_0_15px_rgba(138,43,226,0.5)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(138,43,226,0.8)]"
               >

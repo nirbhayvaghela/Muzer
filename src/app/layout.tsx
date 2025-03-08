@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionWrapper from "@/components/providers/SessionWrapper";
+import QueryProvider from "@/components/providers/QueryProvider";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +30,28 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionWrapper>{children}</SessionWrapper>
+        <SessionWrapper>
+          <QueryProvider>
+            {children}{" "}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                success: {
+                  style: {
+                    backgroundColor: "green",
+                    color: "white",
+                  },
+                },
+                error: {
+                  style: {
+                    backgroundColor: "red",
+                    color: "white",
+                  },
+                },
+              }}
+            />
+          </QueryProvider>
+        </SessionWrapper>
       </body>
     </html>
   );

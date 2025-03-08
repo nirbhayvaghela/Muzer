@@ -13,14 +13,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.email) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
   }
-
-  // user exits
-  const user = await db.user.findUnique({
-    where: { email: session.user.email },
-  });
-  if (!user) {
-    return Response.json({ message: "User not found" }, { status: 401 });
-  }
+const userId = session?.user?.id as string;
 
   try {
     const { streamId } = UpvoteSchema.parse(await req.json());
@@ -34,16 +27,11 @@ export async function POST(req: NextRequest) {
         { message: "Stream doesn't exist." },
         { status: 404 }
       );
-    } else if (stream?.creatorId !== user?.id) {
-      return Response.json(
-        { message: "You are not creator of this stream" },
-        { status: 404 }
-      );
-    }
+    } 
 
     // Check if the user has already upvoted
     const existingUpvote = await db.upvote.findUnique({
-      where: { streamId_userId: { streamId, userId: user.id } },
+      where: { streamId_userId: { streamId, userId } },
     });
 
     if (existingUpvote) {
@@ -60,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     // Add upvote if it doesn't exist
     await db.upvote.create({
-      data: { streamId, userId: user.id },
+      data: { streamId, userId },
     });
 
     return Response.json({

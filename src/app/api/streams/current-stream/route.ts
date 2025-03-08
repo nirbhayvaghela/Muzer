@@ -6,31 +6,40 @@ import db from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
+
   if (!session?.user?.email) {
-    return Response.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const mostUpvoted = await db.upvote.groupBy({
-      by: ["streamId"],
-      _count: { streamId: true },
-      orderBy: { _count: { streamId: "desc" } },
-      take: 1,
+    // Find the user from the database using email
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+      include: { Queue: true },
     });
 
-    if (mostUpvoted.length === 0) {
-      return NextResponse.json(
-        { message: "No streams found", status: false },
-        { status: 404 }
-      );
+    if (!user?.Queue) {
+      return NextResponse.json({ message: "Queue not found for user" }, { status: 404 });
     }
 
-    const stream = await db.stream.findUnique({
-      where: { id: mostUpvoted[0].streamId },
+    // Fetch the most upvoted stream for the user's queue
+    const mostUpvoted = await db.stream.findFirst({
+      where: {
+        queueId: user.Queue.id, 
+      },
+      orderBy: {
+        upvotes: {
+          _count: "desc",
+        },
+      },
+      include: {
+        upvotes: true,
+      },
     });
 
-    return NextResponse.json({ stream, status: true });
+    return NextResponse.json({ stream: mostUpvoted, status: 200 });
   } catch (error: any) {
+    console.error("Error fetching stream:", error);
     return NextResponse.json(
       { message: "Error fetching stream", errors: error.errors, status: false },
       { status: 500 }
