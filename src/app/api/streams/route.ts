@@ -35,12 +35,14 @@ export async function POST(req: NextRequest) {
     const queue = await db.queue.findFirst({
       where: { userId: data?.creatorId },
     });
-    if(!queue) {
+    if (!queue) {
       return NextResponse.json(
         { message: "QueueId is required" },
         { status: 400 }
       );
     }
+
+    console.log({ data: data.url, YT_REGEX });
     // Validate YouTube URL
     const videoId = data.url.match(YT_REGEX)?.[1];
     if (!videoId) {
@@ -63,15 +65,12 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
-
-    
-
+    console.log({ videoId });
     // Fetch YouTube Video Details
     let videoDetails;
     try {
       videoDetails = await youtubesearchapi.GetVideoDetails(videoId);
-      console.log(videoDetails,"videoDetails")
-      
+      console.log(videoDetails, "videoDetails");
       if (!videoDetails || !videoDetails.thumbnail?.thumbnails?.length) {
         return NextResponse.json(
           { message: "Invalid video details response" },
@@ -138,11 +137,11 @@ export async function DELETE(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const streamId = searchParams.get("streamId");
 
-    if(!streamId) {
+    if (!streamId) {
       return NextResponse.json({
         message: "streamId required.",
         status: 404,
-      })
+      });
     }
     // Check if the stream exists
     const stream = await db.stream.findUnique({

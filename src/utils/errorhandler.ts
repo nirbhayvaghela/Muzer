@@ -8,7 +8,6 @@ enum ErrorCode {
 }
 
 export const errorHandler = async (code: number) => {
-  console.log(code, "code");
   if (code === ErrorCode.TokenExpired || code === ErrorCode.Unauthorized) {
     window.location.href = `/`;
     toast.error("Token expired. Please login again.");

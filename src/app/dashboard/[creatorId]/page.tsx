@@ -50,10 +50,7 @@ export default function Dashboard() {
   const videoPlayerRef = useRef<any>(null);
   const { dashboardId } = useParams(); 
 
-  console.log(dashboardId,"dashboardID")
-  console.log(session?.user?.id,"userId")
   const isCreator = dashboardId === session?.user?.id; 
-  console.log(isCreator,"isCreator");
   const { mutateAsync: createStream, isPending: isCreatingStream } =
     useCreateStream();
   const { data: streams, isPending: isFecthingQueue } = useGetCurrentQueue();
@@ -77,8 +74,8 @@ export default function Dashboard() {
     player.playVideo();
 
     async function eventHandler(event: any) {
-      console.log(event);
-      console.log(event.data);
+      // console.log(event);
+      // console.log(event.data);
       if (event.data === 0) {
         // playNext();
         await deleteStream(currentSong?.id as string);
@@ -92,7 +89,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!isFecthingQueue) {
-      console.log(streams, "strems");
       const data = streams?.data?.streams;
       setQueue(data);
     }
@@ -119,7 +115,6 @@ export default function Dashboard() {
       // Handle response
       if (res?.data) {
         toast.success("Stream created successfully!");
-        console.log(res.data, "response");
       } else {
         throw new Error("Failed to create stream.");
       }
