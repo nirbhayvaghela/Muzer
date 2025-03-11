@@ -1,10 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import db from "@/lib/db";
-//@ts-ignore
-import youtubesearchapi from "youtube-search-api";
 
 const YT_REGEX =
   /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
@@ -42,7 +39,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log({ data: data.url, YT_REGEX });
     // Validate YouTube URL
     const videoId = data.url.match(YT_REGEX)?.[1];
     if (!videoId) {
@@ -65,15 +61,35 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
-    console.log({ videoId });
     // Fetch YouTube Video Details
-    let videoDetails;
+    let videoDetails: any;
+
     try {
-      videoDetails = await youtubesearchapi.GetVideoDetails(videoId);
-      console.log(videoDetails, "videoDetails");
-      if (!videoDetails || !videoDetails.thumbnail?.thumbnails?.length) {
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${process.env.key}`
+      );
+      console.log(response)
+      if (!response.ok) {
+        return NextResponse.json(
+          { message: "Failed to fetch video details from YouTube API" },
+          { status: response.status }
+        );
+      }
+      const data = await response.json(); // Parse response JSON
+      console.log(data, "data"); // Logging parsed data
+    
+      if (!data.items || data.items.length === 0) {
         return NextResponse.json(
           { message: "Invalid video details response" },
+          { status: 400 }
+        );
+      }
+    
+      videoDetails = data.items[0].snippet; // Correctly accessing snippet
+    
+      if (!videoDetails?.thumbnails?.medium) {
+        return NextResponse.json(
+          { message: "Thumbnail not available" },
           { status: 400 }
         );
       }
@@ -84,11 +100,12 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+    
 
-    // Process Thumbnails
-    const thumbnails = [...videoDetails.thumbnail.thumbnails].sort(
-      (a, b) => a.width - b.width
-    );
+    // // Process Thumbnails
+    // const thumbnails = [...videoDetails.thumbnail.thumbnails].sort(
+    //   (a, b) => a.width - b.width
+    // );
 
     const fallbackImage =
       "https://cdn.pixabay.com/photo/2024/02/28/07/42/european-shorthair-8601492_640.jpg";
@@ -100,11 +117,7 @@ export async function POST(req: NextRequest) {
         url: data.url,
         extractedId: videoId,
         title: videoDetails.title || "Can't find video",
-        smallImage:
-          thumbnails.length > 1
-            ? thumbnails[thumbnails.length - 2].url
-            : thumbnails[0]?.url ?? fallbackImage,
-        bigImage: thumbnails[thumbnails.length - 1]?.url ?? fallbackImage,
+        thumbnail: videoDetails?.thumbnails?.medium?.url ?? fallbackImage,
         queueId: queue?.id,
         type: "Youtube",
       },

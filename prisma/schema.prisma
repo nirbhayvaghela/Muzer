@@ -25,10 +25,9 @@ model User {
 model Stream {
   id          String     @id @default(uuid())
   url         String
-  extractedId String     
+  extractedId String
   title       String     @default("")
-  smallImage  String     @default("")
-  bigImage    String     @default("")
+  thumbnail   String     @default("")
   creatorId   String
   // played      Boolean    @default(false)
   type        StreamType

@@ -31,8 +31,7 @@ interface Stream {
   url: string;
   extractedId: string;
   title: string;
-  smallImage: string;
-  bigImage: string;
+  thumbnail: string;
   creatorId: string;
   type: "Youtube";
   queueId: string;
@@ -240,7 +239,7 @@ export default function Dashboard() {
                       <Image
                         width={100}
                         height={100}
-                        src={song.bigImage || "/placeholder.svg"}
+                        src={song.thumbnail || "/placeholder.svg"}
                         alt={song.title}
                         className="w-20 h-14 object-cover rounded-md shadow-md"
                       />
