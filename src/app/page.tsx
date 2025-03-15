@@ -23,6 +23,10 @@ function App() {
   const router = useRouter();
 
   const handleRedirect = () => {
+    if (!session) {
+      toast.error("Please SignIn first.");
+      return;
+    }
     const isValid =
       url.startsWith("https://muzi-yt.vercel.app/dashboard") ||
       url.startsWith("http://localhost:3000/dashboard");
@@ -32,8 +36,6 @@ function App() {
       toast.error("Invalid user Dashboard url.");
     }
   };
-   
- 
 
   useEffect(() => {
     const canvas = canvasRef.current;
