@@ -6,9 +6,10 @@ import { useSession } from "next-auth/react";
 function AuthButton() {
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
+
   const handleAuth = async () => {
     if (session) {
-      await signOut();
+      await signOut({ callbackUrl: '/' });
     } else {
       await signIn("google");
     }

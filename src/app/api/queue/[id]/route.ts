@@ -1,30 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { auth } from "@/auth";
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, { params }: any) {
   const session = await auth();
 
   if (!session?.user?.email) {
-    return Response.json({ message: "Unauthorized" }, { status: 401 });
+    return Response.json({ message: "Unauthorized",streams:[] }, { status: 401 });
   }
-
+  const userId = params.id; // Get the ID from the URL
   try {
-    // Find the user in the database using email from session
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return Response.json({ message: "User not found" }, { status: 404 });
-    }
 
     // Upsert queue with the correct user ID from the database
     const queue = await db.queue.upsert({
-      where: { userId: user.id }, // Use user.id from DB, not session.user.id
+      where: { userId: userId }, // Use user.id from DB, not session.user.id
       update: {}, // No updates needed, just return existing queue
-      create: { userId: user.id },
+      create: { userId: userId },
       include: { streams: true }, // Include related streams if needed
     });
 
@@ -52,6 +45,6 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error("Error fetching streams:", error);
-    return Response.json({ message: "Internal server error" }, { status: 500 });
+    return Response.json({ message: "Internal server error", }, { status: 500 });
   }
 }

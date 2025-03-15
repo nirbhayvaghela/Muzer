@@ -23,10 +23,10 @@ export const upvoteStream = async (body: { streamId: string }) => {
   return response;
 };
 
-export const getCurrentStream = async () => {
+export const getCurrentStream = async (userId: string) => {
   let response;
   try {
-    response = await apiClient.get(`/streams/current-stream`);
+    response = await apiClient.get(`/streams/current-stream/${userId}`);
   } catch (error: any) {
     response = error.response;
     // errorHandler(response.data.statusCode);
@@ -34,10 +34,10 @@ export const getCurrentStream = async () => {
   return response;
 };
 
-export const getCurrentQueue = async () => {
+export const getCurrentQueue = async (userId: string) => {
   let response;
   try {
-    response = await apiClient.get(`/queue`);
+    response = await apiClient.get(`/queue/${userId}`);
   } catch (error: any) {
     response = error.response;
     // errorHandler(response.data.statusCode);

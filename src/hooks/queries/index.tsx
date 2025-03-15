@@ -34,18 +34,18 @@ export const useUpvoteStream = () => {
 };
 
 // Hook for fetching the current stream
-export const useGetCurrentStream = () => {
+export const useGetCurrentStream = (userId: string) => {
   return useQuery({
     queryKey: ["currentStream"],
-    queryFn: () => getCurrentStream(),
+    queryFn: () => getCurrentStream(userId),
   });
 };
 
 // Hook for fetching the current queue
-export const useGetCurrentQueue = () => {
+export const useGetCurrentQueue = (userId: string) => {
   return useQuery({
     queryKey: ["currentQueue"],
-    queryFn: () => getCurrentQueue(),
+    queryFn: () => getCurrentQueue(userId),
   });
 };
 

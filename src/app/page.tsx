@@ -13,13 +13,28 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import AuthButton from "@/components/authButton";
 import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 
 function App() {
   const { data: session } = useSession();
+
   const [url, setUrl] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const router = useRouter();
-  
+
+  const handleRedirect = () => {
+    const isValid =
+      url.startsWith("https://muzi-yt.vercel.app/dashboard") ||
+      url.startsWith("http://localhost:3000/dashboard");
+    if (isValid) {
+      router.push(url);
+    } else {
+      toast.error("Invalid user Dashboard url.");
+    }
+  };
+   
+ 
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -92,14 +107,15 @@ function App() {
       <nav className="relative z-10 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
+            {/* Left Side - Logo */}
             <div className="flex items-center">
               <Music2 className="h-8 w-8 text-[#8A2BE2]" />
-              <span className="ml-2 text-xl font-bold">Muzi</span>
+              <span className="ml-2 text-lg sm:text-xl font-bold">Muzi</span>
             </div>
-            <div className="hidden md:block">
-              <div className="flex items-center space-x-4">
-                <AuthButton />
-              </div>
+
+            {/* Right Side - Button (Visible on mobile and desktop) */}
+            <div className="flex items-center">
+              <AuthButton />
             </div>
           </div>
         </div>
@@ -112,25 +128,25 @@ function App() {
               Your Music, Your Way
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto">
-              Stream millions of songs with crystal clear quality. Discover new
-              artists and create your perfect playlist.
+              The power of music in your hands. Vote for the next track and
+              enjoy!
             </p>
-            <div className="relative w-1/3 m-auto mb-7">
+            <div className="relative w-full max-w-lg mx-auto mb-5 px-4 sm:px-0">
               <Input
                 type="url"
-                placeholder="Paste user's public dashboard URL"
+                placeholder="Paste any user's dashboard URL"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="w-full pl-7 pr-24 h-12 bg-black/40 backdrop-blur-lg border-white/10 text-white placeholder:text-gray-400 focus:border-[#8A2BE2] focus:ring-[#8A2BE2] transition-all duration-300"
                 required
               />
               <div className="absolute inset-y-0 right-1.5 flex items-center">
-                <Button
-                  type="submit"
-                  className="bg-[#8A2BE2] hover:bg-[#7B1FA2] text-white px-6 h-9  shadow-[0_0_15px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] transition-all duration-300"
+                <button
+                  onClick={handleRedirect}
+                  className="rounded-lg bg-[#8A2BE2] hover:bg-[#7B1FA2] text-white px-4 sm:px-6 h-9 text-sm sm:text-base shadow-[0_0_15px_rgba(138,43,226,0.3)] hover:shadow-[0_0_20px_rgba(138,43,226,0.5)] transition-all duration-300"
                 >
                   Go
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -138,7 +154,7 @@ function App() {
               <Button
                 onClick={() => router.push(`/dashboard/${session?.user?.id}`)}
                 size="lg"
-                className="bg-[#8A2BE2] hover:bg-[#7B27CC] text-white px-8 py-6 text-lg rounded-full shadow-[0_0_15px_rgba(138,43,226,0.5)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(138,43,226,0.8)]"
+                className="bg-[#8A2BE2] hover:bg-[#7B27CC] text-white px-6 py-4 sm:px-8 sm:py-6 text-base sm:text-lg rounded-full shadow-[0_0_15px_rgba(138,43,226,0.5)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(138,43,226,0.8)]"
               >
                 Get Started <ChevronRight className="ml-2" />
               </Button>

@@ -1,20 +1,20 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, { params }: any) {
   const session = await auth();
 
   if (!session?.user?.email) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-
+  const userId = params.id; 
+  console.log(userId,"userID")
   try {
     // Find the user from the database using email
     const user = await db.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId},
       include: { Queue: true },
     });
 
